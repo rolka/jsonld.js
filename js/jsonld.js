@@ -1551,8 +1551,14 @@ jsonld.RequestQueue.prototype.add = function(url, callback) {
       // resolve/reject promise once URL has been loaded
       load.then(function(remoteDoc) {
         resolve(remoteDoc);
+        if(typeof callback === 'function') {
+          callback(null, remoteDoc);
+        }
       }).catch(function(err) {
         reject(err);
+        if(typeof callback === 'function') {
+          callback(err);
+        }
       });
     });
   }
@@ -1938,14 +1944,6 @@ jsonld.documentLoaders.xhr = function(options) {
   var queue = new jsonld.RequestQueue();
   var headers = buildHeaders(options.headers);
 
-  // use option or, by default, use Promise when its defined
-  var usePromise = ('usePromise' in options ?
-    options.usePromise : (typeof Promise !== 'undefined'));
-  if(usePromise) {
-    return queue.wrapLoader(function(url) {
-      return jsonld.promisify(loader, url);
-    });
-  }
   return queue.wrapLoader(loader);
 
   function loader(url, callback) {
@@ -1998,7 +1996,6 @@ jsonld.documentLoaders.xhr = function(options) {
           doc.contextUrl = linkHeader.target;
         }
       }
-
       callback(null, doc);
     };
     req.onerror = function() {
